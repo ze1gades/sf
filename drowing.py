@@ -11,9 +11,9 @@ draw_mol = np.vectorize(f, signature='(n)->()',
 
 
 def draw_sys(coord, screen, line_box, piston_box, thickness, radius,
-             fps, mark_font):
+             fps, mark_font, timeline):
     screen.fill((255, 255, 255))
-    fps_mark = mark_font.render('{:.2f}fps'.format(fps), 1,
+    fps_mark = mark_font.render('{:.2f}fps, shape: {:d}'.format(fps, timeline), 1,
                                 (255, 99, 71))
     pygame.draw.rect(screen, (112, 128, 144), piston_box)
     pygame.draw.lines(screen, (181, 181, 181), False, line_box,

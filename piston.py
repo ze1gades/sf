@@ -160,7 +160,7 @@ def restart():
 
 def cycle():
     global Model_is_run, line_box, piston_box, coord, speed, t, mask, \
-        bord_box, temp, timeline, mean_speed, plot_flag, tg, m
+        bord_box, temp, timeline, mean_speed, plot_flag, tg, m, start_time
     clock.tick(fps)
     while Model_is_run:
         if root.focus_get() != None:
@@ -178,7 +178,8 @@ def cycle():
                                               R)
         piston_box[2] = piston_coord(t)
         drowing.draw_sys(coord, screen, line_box, piston_box,
-                         indent // 2, R, clock.get_fps(), mark_font)
+                         indent // 2, R,
+                         clock.get_fps(), mark_font, timeline.shape[0])
         if not plot_flag:
             if np.mean(np.sqrt(np.sum(speed ** 2, axis=1))) >= \
                     5 * max_speed:
@@ -191,6 +192,12 @@ def cycle():
                                     np.mean(np.sqrt(np.sum(speed ** 2,
                                                            axis=1)))))
             timeline = np.hstack((timeline, t - start_time))
+
+        if timeline.shape[0] == 2000:
+            temp = (temp[::2] + temp[1::2]) / 2
+            mean_speed = (mean_speed[::2] + mean_speed[1::2]) / 2
+            timeline = (timeline[::2] + timeline[1::2]) / 2
+
         if timeline.shape[0] == 2:
             tg = (mean_speed[1] - mean_speed[0]) / \
                  (timeline[1] - timeline[0])
@@ -246,6 +253,7 @@ mol_mass = mass / avogadro
 Done = False
 Model_is_run = False
 t = 0
+start_time = None
 var_A = tk.IntVar(value=100)
 A_lim = None
 A = None
@@ -261,7 +269,7 @@ type_of_movement = tk.IntVar()
 tg = None
 var_tg = tk.DoubleVar(value=None)
 m = None
-learning_rate = 0.01
+learning_rate = 0.001
 
 fps = 120
 clock = pygame.time.Clock()
