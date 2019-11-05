@@ -39,10 +39,21 @@ def theor():
 def alt_tab(*args):
     root.overrideredirect(False)
     pygame.time.delay(1000)
-    print(1)
 
 def authors():
     authors_frame.tkraise()
+
+
+def left(*args):
+    global pages, page
+    page.set((page.get() - 2) % n_page + 1)
+    pages[page.get() - 1].tkraise()
+
+
+def right(*args):
+    global pages, page
+    page.set((page.get()) % n_page + 1)
+    pages[page.get() - 1].tkraise()
 
 
 def play_pause():
@@ -117,7 +128,8 @@ def restart():
         A_lim, var_T, T, T_lim, coord, speed, bord_box, piston_box, \
         piston_coord, piston_speed, t, mask, temp, timeline, \
         play_pause_button, mean_speed, var_mass, var_initial_temp, \
-        mass, initial_temp, rel, plot_flag, max_speed
+        mass, initial_temp, rel, plot_flag, max_speed, targ_tg,\
+        var_targ_tg
     Model_is_run = True
     plot_flag = False
     limits = (R_lim, N_lim, A_lim, T_lim, mass_lim, initial_temp_lim)
@@ -132,6 +144,12 @@ def restart():
     rel = var_rel.get()
     mass = var_mass.get()
     initial_temp = var_initial_temp.get()
+    varlambda = (line_box[3][1] - line_box[0][1]) * \
+                (line_box[1][0] - line_box[0][0] - A / 2) / 2 / \
+                np.sqrt(2) / R / N
+    mps = 2 * A / T
+    targ_tg = mps ** 2 / varlambda * size_coef * 100
+    var_targ_tg.set('{:.2f}'.format(targ_tg))
     piston_box[2] = 0
     bord_box[0][0] = indent
     coord = np.hstack((
@@ -160,7 +178,8 @@ def restart():
 
 def cycle():
     global Model_is_run, line_box, piston_box, coord, speed, t, mask, \
-        bord_box, temp, timeline, mean_speed, plot_flag, tg, m, start_time
+        bord_box, temp, timeline, mean_speed, plot_flag, tg, m,\
+        start_time, var_ratio_tg
     clock.tick(fps)
     while Model_is_run:
         if root.focus_get() != None:
@@ -209,6 +228,7 @@ def cycle():
             tg += (new_tg - tg) * learning_rate
             m += (new_m - m) * learning_rate
             var_tg.set('{:.2f}'.format(tg * 100))
+            var_ratio_tg.set('{:.2f}'.format(tg * 100 / targ_tg))
             drowing.plot(screen, timeline, temp, mark_font,
                          energy_plot_box, 20, 20, 'К')
             drowing.plot(screen, timeline, mean_speed, mark_font,
@@ -232,7 +252,7 @@ root.geometry("{0}x{1}+0+0".format(root.winfo_screenwidth(),
                                    root.winfo_screenheight()))
 
 s = ttk.Style()
-s.configure('my.TButton', font=('Helvetica', 16))
+s.configure('my.TButton', font=('Helvetica', 20))
 
 model_frame_height = 0.5
 model_frame_width = 0.55
@@ -268,8 +288,13 @@ initial_temp = None
 type_of_movement = tk.IntVar()
 tg = None
 var_tg = tk.DoubleVar(value=None)
+targ_tg = None
+var_targ_tg = tk.DoubleVar(value=None)
 m = None
-learning_rate = 0.001
+page = tk.IntVar(value=1)
+n_page = None
+learning_rate = 0.01
+var_ratio_tg = tk.DoubleVar(value=None)
 
 fps = 120
 clock = pygame.time.Clock()
@@ -383,6 +408,18 @@ auth_ff.place(rely=0.05, relx=0.75, x=10, width=150, height=205)
 menu_button = ttk.Button(frame_param, text='Меню', command=go_to_menu,
                          style='my.TButton')
 menu_button.place(relx=0.7, relwidth=0.25, rely=1.0, y=-80, height=60)
+back_button = ttk.Button(frame_param, text ='<', command=left,
+                         style='my.TButton')
+back_button.place(relx=0.05, relwidth=0.15, rely=1.0, y=-80, height=60)
+forward_button = ttk.Button(frame_param, text='>', command=right,
+                            style='my.TButton')
+forward_button.place(relx=0.5, relwidth=0.15, rely=1.0, y=-80, height=60)
+page_label = ttk.Label(frame_param, text='Стр.', compound='right',
+                       style='NameVar.TLabel')
+page_label.place(relx=0.25, relwidth=0.1, rely=1.0, y=-80, height=60)
+page_num_label = ttk.Label(frame_param, textvariable=page,
+                       style='NameVar.TLabel')
+page_num_label.place(relx=0.35, relwidth=0.1, rely=1.0, y=-80, height=60)
 play_pause_button = ttk.Button(frame_param, text='Start',
                                command=play_pause, style='my.TButton')
 play_pause_button.place(relx=0.05, relwidth=0.425, y=30, height=60)
@@ -392,17 +429,24 @@ restart_button.place(relx=0.525, relwidth=0.425, y=30, height=60)
 
 var_style = ttk.Style()
 var_style.configure('Var.TLabel', background='white',
-                    font=('Helvetica', 14))
-var_style.configure('NameVar.TLabel', font=('Helvetica', 14))
+                    font=('Helvetica', 18))
+var_style.configure('NameVar.TLabel', font=('Helvetica', 18))
 
 
 # **Params_control**
 
+pages = [tk.Frame(frame_param), tk.Frame(frame_param)]
+for i in pages:
+    i.place(relwidth=1.0, relheight=0.7, height=-170, y=90)
+
+pages[0].tkraise()
+n_page = len(pages)
+
 column_width = [0.45, 0.2, 0.15]
 column_offset = [0.05, 0.55, 0.8]
-row_height = 50
-row_offset = 100
-base_row_offset = 5
+row_height = 0.2
+row_offset = 0.04
+base_row_offset = 0.04
 max_amplitude = int(root.winfo_width() * model_frame_width / 2)
 
 
@@ -414,23 +458,23 @@ def set_rel(*args):
     var_rel.set(0.5)
 
 
-type_of_piston_movement_label = ttk.Label(frame_param,
-                                          text='Характер движения\n '
+type_of_piston_movement_label = ttk.Label(pages[0],
+                                          text='Характер\nдвижения\n '
                                                'поршня', justify='left',
                                           style='NameVar.TLabel')
-sin_type = ttk.Radiobutton(frame_param, text='sin',
+sin_type = ttk.Radiobutton(pages[0], text='sin',
                            variable=type_of_movement, value=0,
                            command=set_rel)
-linear_type = ttk.Radiobutton(frame_param, text='linear',
+linear_type = ttk.Radiobutton(pages[0], text='linear',
                               variable=type_of_movement, value=1,
                               command=set_rel)
 type_of_piston_movement_label.place(relx=0.05, relwidth=0.45,
-                                    y=row_offset, height=2 * row_height)
-sin_type.place(relx=0.5, relwidth=0.1, y=row_offset + 0.7 * row_height,
-               height=row_height)
+                                    rely=row_offset, relheight=row_height)
+sin_type.place(relx=0.5, relwidth=0.1, rely=row_offset,
+               relheight=row_height)
 linear_type.place(relx=0.65, relwidth=0.15,
-                  y=row_offset + 0.7 * row_height, height=row_height)
-row_offset += base_row_offset + 2 * row_height
+                  rely=row_offset, relheight=row_height)
+row_offset += base_row_offset + row_height
 
 
 # Amplitude
@@ -443,19 +487,19 @@ def format_A(*args):
 
 A_lim = [10, max_amplitude]
 var_A.trace_variable('w', format_A)
-amplitude_spin = ttk.Label(frame_param, textvariable=var_A,
-                           style='Var.TLabel')
-amplitude_scale = ttk.Scale(frame_param, from_=A_lim[0],
+amplitude_spin = ttk.Label(pages[0], textvariable=var_A,
+                           style='Var.TLabel', anchor='center')
+amplitude_scale = ttk.Scale(pages[0], from_=A_lim[0],
                             to=A_lim[1], variable=var_A,
                             command=format_A)
-amplitude_label = ttk.Label(frame_param, text='Амплитуда:',
+amplitude_label = ttk.Label(pages[0], text='Амплитуда:',
                             style='NameVar.TLabel')
 amplitude_label.place(relx=column_offset[0], relwidth=column_width[0],
-                      y=row_offset, height=row_height)
+                      rely=row_offset, relheight=row_height)
 amplitude_spin.place(relx=column_offset[1], relwidth=column_width[1],
-                     y=row_offset, height=row_height)
+                     rely=row_offset, relheight=row_height)
 amplitude_scale.place(relx=column_offset[2], relwidth=column_width[2],
-                      y=row_offset, height=row_height)
+                      rely=row_offset, relheight=row_height)
 row_offset += base_row_offset + row_height
 
 
@@ -467,18 +511,18 @@ def format_rel(*args):
 
 
 rel_lim = [0.01, 0.99]
-rel_spin = ttk.Label(frame_param, textvariable=var_rel,
-                     style='Var.TLabel')
-rel_scale = ttk.Scale(frame_param, from_=rel_lim[0], to=rel_lim[1],
+rel_spin = ttk.Label(pages[0], textvariable=var_rel,
+                     style='Var.TLabel', anchor='center')
+rel_scale = ttk.Scale(pages[0], from_=rel_lim[0], to=rel_lim[1],
                       variable=var_rel, command=format_rel)
-rel_label = ttk.Label(frame_param, text='Отношение\nпериодов:',
+rel_label = ttk.Label(pages[0], text='Отношение\nпериодов:',
                       style='NameVar.TLabel')
 rel_label.place(relx=column_offset[0], relwidth=column_width[0],
-                y=row_offset, height=row_height)
+                rely=row_offset, relheight=row_height)
 rel_spin.place(relx=column_offset[1], relwidth=column_width[1],
-               y=row_offset, height=row_height)
+               rely=row_offset, relheight=row_height)
 rel_scale.place(relx=column_offset[2], relwidth=column_width[2],
-                y=row_offset, height=row_height)
+                rely=row_offset, relheight=row_height)
 row_offset += base_row_offset + row_height
 
 
@@ -490,48 +534,49 @@ def format_T(*args):
     var_T.set("{:.2f}".format(float(var_T.get())))
 
 
-T_lim = [0.05, 5]
-period_spin = ttk.Label(frame_param, textvariable=var_T,
-                        style='Var.TLabel')
-period_scale = ttk.Scale(frame_param, from_=T_lim[0], to=T_lim[1],
+T_lim = [1, 10]
+period_spin = ttk.Label(pages[0], textvariable=var_T,
+                        style='Var.TLabel', anchor='center')
+period_scale = ttk.Scale(pages[0], from_=T_lim[0], to=T_lim[1],
                          variable=var_T, command=format_T)
-period_label = ttk.Label(frame_param, text='Период:',
+period_label = ttk.Label(pages[0], text='Период:',
                          style='NameVar.TLabel')
 period_label.place(relx=column_offset[0], relwidth=column_width[0],
-                   y=row_offset, height=row_height)
+                   rely=row_offset, relheight=row_height)
 period_spin.place(relx=column_offset[1], relwidth=column_width[1],
-                  y=row_offset, height=row_height)
+                  rely=row_offset, relheight=row_height)
 period_scale.place(relx=column_offset[2], relwidth=column_width[2],
-                   y=row_offset, height=row_height)
+                   rely=row_offset, relheight=row_height)
 row_offset += base_row_offset + row_height
 
 
 # Number of molecules
-
+row_offset = base_row_offset
 
 def format_N(*args):
     global var_N
     var_N.set("{:d}".format(int(var_N.get())))
 
 
-N_lim = [1, 120]
-number_of_molecules_spin = ttk.Label(frame_param, textvariable=var_N,
-                                     style='Var.TLabel')
-number_of_molecules_scale = ttk.Scale(frame_param, from_=N_lim[0],
+N_lim = [1, 80]
+number_of_molecules_spin = ttk.Label(pages[1], textvariable=var_N,
+                                     style='Var.TLabel',
+                                     anchor='center')
+number_of_molecules_scale = ttk.Scale(pages[1], from_=N_lim[0],
                                       to=N_lim[1], variable=var_N,
                                       command=format_N)
-number_of_molecules_label = ttk.Label(frame_param,
+number_of_molecules_label = ttk.Label(pages[1],
                                       text='Количество молекул:',
                                       style='NameVar.TLabel')
 number_of_molecules_label.place(relx=column_offset[0],
-                                relwidth=column_width[0], y=row_offset,
-                                height=row_height)
+                                relwidth=column_width[0], rely=row_offset,
+                                relheight=row_height)
 number_of_molecules_spin.place(relx=column_offset[1],
-                               relwidth=column_width[1], y=row_offset,
-                               height=row_height)
+                               relwidth=column_width[1], rely=row_offset,
+                               relheight=row_height)
 number_of_molecules_scale.place(relx=column_offset[2],
-                                relwidth=column_width[2], y=row_offset,
-                                height=row_height)
+                                relwidth=column_width[2], rely=row_offset,
+                                relheight=row_height)
 row_offset += base_row_offset + row_height
 
 
@@ -543,24 +588,24 @@ def format_R(*args):
     var_R.set("{:d}".format(int(var_R.get())))
 
 
-R_lim = [2, 20]
-molecule_radius_spin = ttk.Label(frame_param, textvariable=var_R,
-                                 style='Var.TLabel')
-molecule_radius_scale = ttk.Scale(frame_param, from_=R_lim[0],
+R_lim = [2, 7]
+molecule_radius_spin = ttk.Label(pages[1], textvariable=var_R,
+                                 style='Var.TLabel', anchor='center')
+molecule_radius_scale = ttk.Scale(pages[1], from_=R_lim[0],
                                   to=R_lim[1], variable=var_R,
                                   command=format_R)
-molecule_radius_label = ttk.Label(frame_param,
+molecule_radius_label = ttk.Label(pages[1],
                                   text='Радиус молекул:',
                                   style='NameVar.TLabel')
 molecule_radius_label.place(relx=column_offset[0],
-                            relwidth=column_width[0], y=row_offset,
-                            height=row_height)
+                            relwidth=column_width[0], rely=row_offset,
+                            relheight=row_height)
 molecule_radius_spin.place(relx=column_offset[1],
-                           relwidth=column_width[1], y=row_offset,
-                           height=row_height)
+                           relwidth=column_width[1], rely=row_offset,
+                           relheight=row_height)
 molecule_radius_scale.place(relx=column_offset[2],
-                            relwidth=column_width[2], y=row_offset,
-                            height=row_height)
+                            relwidth=column_width[2], rely=row_offset,
+                            relheight=row_height)
 row_offset += base_row_offset + row_height
 
 
@@ -574,23 +619,23 @@ def format_mass(*args):
 
 mass_lim = [0.001, 0.5]
 
-molecule_mass_spin = ttk.Label(frame_param, textvariable=var_mass,
-                               style='Var.TLabel')
-molecule_mass_scale = ttk.Scale(frame_param, from_=mass_lim[0],
+molecule_mass_spin = ttk.Label(pages[1], textvariable=var_mass,
+                               style='Var.TLabel', anchor='center')
+molecule_mass_scale = ttk.Scale(pages[1], from_=mass_lim[0],
                                 to=mass_lim[1], variable=var_mass,
                                 command=format_mass)
-molecule_mass_label = ttk.Label(frame_param,
+molecule_mass_label = ttk.Label(pages[1],
                                 text='Молекулярная\nмасса:',
                                 style='NameVar.TLabel')
 molecule_mass_label.place(relx=column_offset[0],
-                          relwidth=column_width[0], y=row_offset,
-                          height=row_height)
+                          relwidth=column_width[0], rely=row_offset,
+                          relheight=row_height)
 molecule_mass_spin.place(relx=column_offset[1],
-                         relwidth=column_width[1], y=row_offset,
-                         height=row_height)
+                         relwidth=column_width[1], rely=row_offset,
+                         relheight=row_height)
 molecule_mass_scale.place(relx=column_offset[2],
-                          relwidth=column_width[2], y=row_offset,
-                          height=row_height)
+                          relwidth=column_width[2], rely=row_offset,
+                          relheight=row_height)
 row_offset += base_row_offset + row_height
 
 
@@ -604,25 +649,25 @@ def exp(*args):
 
 var_initial_temp.trace_variable('r', exp)
 initial_temp_lim = [10 ** (-10), 10 ** (-4)]
-initial_temp_spin = ttk.Label(frame_param,
+initial_temp_spin = ttk.Label(pages[1],
                               textvariable=var_initial_temp,
-                              style='Var.TLabel')
-initial_temp_scale = ttk.Scale(frame_param,
+                              style='Var.TLabel', anchor='center')
+initial_temp_scale = ttk.Scale(pages[1],
                                from_=initial_temp_lim[0],
                                to=initial_temp_lim[1],
                                variable=var_initial_temp, command=exp)
-initial_temp_label = ttk.Label(frame_param,
+initial_temp_label = ttk.Label(pages[1],
                                text='Начальная\nтемпература:',
                                style='NameVar.TLabel', justify='center')
 initial_temp_label.place(relx=column_offset[0],
-                         relwidth=column_width[0], y=row_offset,
-                         height=row_height)
+                         relwidth=column_width[0], rely=row_offset,
+                         relheight=row_height)
 initial_temp_spin.place(relx=column_offset[1],
-                        relwidth=column_width[1], y=row_offset,
-                        height=row_height)
+                        relwidth=column_width[1], rely=row_offset,
+                        relheight=row_height)
 initial_temp_scale.place(relx=column_offset[2],
-                         relwidth=column_width[2], y=row_offset,
-                         height=row_height)
+                         relwidth=column_width[2], rely=row_offset,
+                         relheight=row_height)
 row_offset += base_row_offset + row_height
 
 # Culc speed
@@ -635,23 +680,42 @@ dt_scale_scale = ttk.Scale(frame_param,
                            to=dt_scale_lim[1],
                            variable=var_dt_scale)
 dt_scale_label.place(relx=column_offset[0],
-                     relwidth=column_width[0], y=row_offset,
-                     height=row_height)
+                     relwidth=column_width[0] + column_width[1], y=-80, rely=0.7,
+                     relheight=0.05)
 dt_scale_scale.place(relx=column_offset[2],
-                     relwidth=column_width[2], y=row_offset,
-                     height=row_height)
+                     relwidth=column_width[2], y=-90, rely=0.7,
+                     relheight=0.05)
 row_offset += base_row_offset + row_height
 
 # Tg
 tg_label = ttk.Label(frame_param,
-                     text='Показатель наклона\nграфика скорости',
-                     style='NameVar.TLabel')
+                     text='Показатель наклона графика скорости',
+                     style='NameVar.TLabel', anchor='center')
+ratio_tg_show = ttk.Label(frame_param, textvariable=var_ratio_tg,
+                          style='Var.TLabel', anchor='center')
+ratio_tg_label = ttk.Label(frame_param, text='Отношение',
+                           style='NameVar.TLabel', anchor='center')
 tg_show = ttk.Label(frame_param, textvariable=var_tg,
-                     style='Var.TLabel')
-tg_label.place(relx=column_offset[0], relwidth=column_width[0],
-               y=row_offset, height=row_height)
-tg_show.place(relx=column_offset[1], relwidth=column_width[1],
-              y=row_offset, height=row_height)
+                     style='Var.TLabel', anchor='center')
+culc_tg_label = ttk.Label(frame_param, text='Практическое',
+                           style='NameVar.TLabel', anchor='center')
+targ_tg_show = ttk.Label(frame_param, textvariable=var_targ_tg,
+                         style='Var.TLabel', anchor='center')
+targ_tg_label = ttk.Label(frame_param, text='Теоретическое',
+                          style='NameVar.TLabel', anchor='center')
+tg_label.place(relx=0.05, relwidth=0.9,
+               y=-90, rely=0.8, relheight=0.05)
+culc_tg_label.place(relx=0.05, relwidth=0.3, y=-90, rely=0.85,
+                    relheight=0.05)
+ratio_tg_label.place(relx=0.4, relwidth=0.2, y=-90, rely=0.85,
+                     relheight=0.05)
+targ_tg_label.place(relx=0.65, relwidth=0.3, y=-90, rely=0.85,
+                    relheight=0.05)
+tg_show.place(relx=0.05, relwidth=0.3, y=-90, rely=0.9, relheight=0.05)
+ratio_tg_show.place(relx=0.4, relwidth=0.2, y=-90, rely=0.9,
+                    relheight=0.05)
+targ_tg_show.place(relx=0.65, relwidth=0.3, y=-90, rely=0.9,
+                   relheight=0.05)
 
 os.environ['SDL_WINDOWID'] = str(frame_model.winfo_id())
 os.environ['SDL_VIDEODRIVER'] = 'windib'
