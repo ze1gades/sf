@@ -19,7 +19,7 @@ def draw_sys(coord, screen, line_box, piston_box, thickness, radius,
     pygame.draw.lines(screen, (181, 181, 181), False, line_box,
                       thickness)
     draw_mol(coord, screen=screen, radius=radius)
-    screen.blit(fps_mark, (line_box[0][0] + 10, line_box[0][1] + 10))
+    #screen.blit(fps_mark, (line_box[0][0] + 10, line_box[0][1] + 10))
 
 
 def plot(screen, x, y, mark_font, plot_box, mark_height, mark_width,

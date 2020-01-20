@@ -48,6 +48,6 @@ def iteration(coord, speed, dt, mask, bord_box, bord_speed, radius):
 R = 8.3144598
 
 
-def temperature(speed, mass, size_coef):
+def temperature(speed, N, mass, size_coef):
     mean_speed = np.mean(np.sum(speed ** 2, axis=1)) * size_coef ** 2
-    return mean_speed * mass / R / 3
+    return mean_speed * mass * N / R / 2
